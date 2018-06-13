@@ -47,6 +47,7 @@ import android.view.WindowManager;
 import com.android.internal.R;
 import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.CommandsInterface.RadioState;
+import com.android.internal.telephony.RIL;
 import com.android.internal.telephony.cat.CatService;
 import com.android.internal.telephony.uicc.IccCardApplicationStatus.AppType;
 import com.android.internal.telephony.uicc.IccCardStatus.CardState;
@@ -185,7 +186,7 @@ public class UiccCard {
                     mHandler.sendMessage(mHandler.obtainMessage(EVENT_CARD_ADDED, null));
                 }
             }
-            if (mCi.needsOldRilFeature("simactivation")) {
+            if (needsSimActivation()) {
                 if (mCardState == CardState.CARDSTATE_PRESENT) {
                     if (!mDefaultAppsActivated) {
                         activateDefaultApps();
@@ -200,6 +201,13 @@ public class UiccCard {
 
             mLastRadioState = radioState;
         }
+    }
+
+    private boolean needsSimActivation() {
+        if (mCi instanceof RIL) {
+            return ((RIL) mCi).needsOldRilFeature("simactivation");
+        }
+        return false;
     }
 
     private void createAndUpdateCatServiceLocked() {
@@ -272,8 +280,8 @@ public class UiccCard {
                 }
 
                 AppType appType = mUiccApplications[i].getType();
-                if (gsmIndex < 0
-                        && (appType == AppType.APPTYPE_USIM || appType == AppType.APPTYPE_SIM)) {
+                if (gsmIndex < 0 &&
+                        (appType == AppType.APPTYPE_USIM || appType == AppType.APPTYPE_SIM)) {
                     gsmIndex = i;
                 } else if (cdmaIndex < 0 &&
                         (appType == AppType.APPTYPE_CSIM || appType == AppType.APPTYPE_RUIM)) {
